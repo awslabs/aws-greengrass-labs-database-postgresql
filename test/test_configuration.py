@@ -6,7 +6,8 @@ from src.configuration import ComponentConfigurationHandler
 
 def test_configuration_default_values(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
-    configuration_handler = ComponentConfigurationHandler()
+    mock_ipc_client = GreengrassCoreIPCClientV2()
+    configuration_handler = ComponentConfigurationHandler(mock_ipc_client)
 
     configuration = configuration_handler.get_configuration()
     assert configuration.get_container_name() == "greengrass_postgresql"
@@ -17,13 +18,14 @@ def test_configuration_default_values(mocker):
 
 def test_configuration_set_container_config(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
+    ipc_client = GreengrassCoreIPCClientV2()
     get_configuration_response = GetConfigurationResponse(
         value={"ContainerMapping": {"HostPort": "8000", "HostVolume": "/some/volume/", "ContainerName": "some-container-name"}}
     )
     mock_ipc_get_config = mocker.patch.object(
         GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response
     )
-    configuration_handler = ComponentConfigurationHandler()
+    configuration_handler = ComponentConfigurationHandler(ipc_client)
     configuration = configuration_handler.get_configuration()
     assert mock_ipc_get_config.call_count == 1
 
@@ -35,6 +37,7 @@ def test_configuration_set_container_config(mocker):
 
 def test_configuration_set_credential_secret_config(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
+    ipc_client = GreengrassCoreIPCClientV2()
     get_configuration_response = GetConfigurationResponse(value={"DBCredentialSecret": "secret-arn"})
     mock_ipc_get_config = mocker.patch.object(
         GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response
@@ -46,7 +49,7 @@ def test_configuration_set_credential_secret_config(mocker):
         )
     )
     mock_ipc_get_secret = mocker.patch.object(GreengrassCoreIPCClientV2, "get_secret_value", return_value=secret_value_reponse)
-    configuration_handler = ComponentConfigurationHandler()
+    configuration_handler = ComponentConfigurationHandler(ipc_client)
 
     configuration = configuration_handler.get_configuration()
     assert mock_ipc_get_config.call_count == 1

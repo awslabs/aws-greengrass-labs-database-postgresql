@@ -22,8 +22,8 @@ class ComponentConfigurationHandler:
     This is used to manage the PostgreSQL component configuration and handle updates on it.
     """
 
-    def __init__(self) -> None:
-        self.__ipc_client = GreengrassCoreIPCClientV2()
+    def __init__(self, ipc_client: GreengrassCoreIPCClientV2) -> None:
+        self.__ipc_client = ipc_client
         self.__component_configuration = self.__ComponentConfiguration()
 
     def subscribe_to_configuration_updates(self):
