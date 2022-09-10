@@ -35,7 +35,7 @@ def test_configuration_set_container_config(mocker):
 
 def test_configuration_set_credential_secret_config(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
-    get_configuration_response = GetConfigurationResponse(value={"CredentialSecret": "secret-arn"})
+    get_configuration_response = GetConfigurationResponse(value={"DBCredentialSecret": "secret-arn"})
     mock_ipc_get_config = mocker.patch.object(
         GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response
     )

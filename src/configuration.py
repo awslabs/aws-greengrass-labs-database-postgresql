@@ -4,12 +4,16 @@ from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
 from awsiot.greengrasscoreipc.model import ConfigurationUpdateEvents
 
 from src.constants import (
+    CONTAINER_MAPPING_KEY,
     CONTAINER_NAME_KEY,
+    DB_CREDENTIAL_SECRET_KEY,
     DEFAULT_CONTAINER_NAME,
     DEFAULT_HOST_PORT,
     DEFAULT_HOST_VOLUME,
     HOST_PORT_KEY,
     HOST_VOLUME_KEY,
+    POSTGRES_PASSWORD_KEY,
+    POSTGRES_USERNAME_KEY,
 )
 
 
@@ -107,15 +111,15 @@ class ComponentConfigurationHandler:
             response = self.__ipc_client.get_secret_value(secret_id=secret_id)
             secret = response.secret_value.secret_string
             self.__component_configuration.set_db_credentials(
-                db_username=secret["postgresql_username"], db_password=secret["postgresql_password"]
+                db_username=secret[POSTGRES_USERNAME_KEY], db_password=secret[POSTGRES_PASSWORD_KEY]
             )
 
-        if "ContainerMapping" in config:
-            container_config = config["ContainerMapping"]
+        if CONTAINER_MAPPING_KEY in config:
+            container_config = config[CONTAINER_MAPPING_KEY]
             _set_container_config(container_config)
 
-        if "CredentialSecret" in config:
-            _set_credential_secret(config["CredentialSecret"])
+        if DB_CREDENTIAL_SECRET_KEY in config:
+            _set_credential_secret(config[DB_CREDENTIAL_SECRET_KEY])
 
     class __ComponentConfiguration:
         """
