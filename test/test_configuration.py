@@ -9,11 +9,10 @@ def test_configuration_default_values(mocker):
     configuration_handler = ComponentConfigurationHandler()
 
     configuration = configuration_handler.get_configuration()
-    assert configuration.container_name == "greengrass_postgresql"
-    assert configuration.db_password == ""
-    assert configuration.db_username == ""
-    assert configuration.host_volume == consts.DEFAULT_HOST_VOLUME
-    assert configuration.host_port == consts.DEFAULT_HOST_PORT
+    assert configuration.get_container_name() == "greengrass_postgresql"
+    assert configuration.get_db_credentials() == ("", "")
+    assert configuration.get_host_volume() == consts.DEFAULT_HOST_VOLUME
+    assert configuration.get_host_port() == consts.DEFAULT_HOST_PORT
 
 
 def test_configuration_set_container_config(mocker):
@@ -26,12 +25,12 @@ def test_configuration_set_container_config(mocker):
     )
     configuration_handler = ComponentConfigurationHandler()
     configuration = configuration_handler.get_configuration()
-    assert configuration.container_name == "some-container-name"
-    assert configuration.db_password == ""
-    assert configuration.db_username == ""
-    assert configuration.host_volume == "/some/volume/"
-    assert configuration.host_port == "8000"
     assert mock_ipc_get_config.call_count == 1
+
+    assert configuration.get_container_name() == "some-container-name"
+    assert configuration.get_db_credentials() == ("", "")
+    assert configuration.get_host_volume() == "/some/volume/"
+    assert configuration.get_host_port() == "8000"
 
 
 def test_configuration_set_credential_secret_config(mocker):
@@ -50,10 +49,10 @@ def test_configuration_set_credential_secret_config(mocker):
     configuration_handler = ComponentConfigurationHandler()
 
     configuration = configuration_handler.get_configuration()
-    assert configuration.container_name == "greengrass_postgresql"
-    assert configuration.db_password == "this-is-a-password"
-    assert configuration.db_username == "this-is-a-username"
-    assert configuration.host_volume == consts.DEFAULT_HOST_VOLUME
-    assert configuration.host_port == consts.DEFAULT_HOST_PORT
     assert mock_ipc_get_config.call_count == 1
     assert mock_ipc_get_secret.call_count == 1
+
+    assert configuration.get_container_name() == "greengrass_postgresql"
+    assert configuration.get_db_credentials() == ("this-is-a-username", "this-is-a-password")
+    assert configuration.get_host_volume() == consts.DEFAULT_HOST_VOLUME
+    assert configuration.get_host_port() == consts.DEFAULT_HOST_PORT
