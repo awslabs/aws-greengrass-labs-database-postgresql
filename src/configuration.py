@@ -43,11 +43,11 @@ class ComponentConfiguration:
             return
         container_config = component_config[CONTAINER_MAPPING_KEY]
         if HOST_PORT_KEY in container_config:
-            self.set_host_port(container_config[HOST_PORT_KEY])
+            self.__host_port = container_config[HOST_PORT_KEY]
         if HOST_VOLUME_KEY in container_config:
-            self.set_host_volume(container_config[HOST_VOLUME_KEY])
+            self.__host_volume = container_config[HOST_VOLUME_KEY]
         if CONTAINER_NAME_KEY in container_config:
-            self.set_container_name(container_config[CONTAINER_NAME_KEY])
+            self.__container_name = container_config[CONTAINER_NAME_KEY]
 
     def _set_credential_secret(self, secret_response: GetSecretValueResponse) -> None:
         """
@@ -63,25 +63,8 @@ class ComponentConfiguration:
         if not secret_response:
             return
         secret = secret_response.secret_value.secret_string
-        self.set_db_credentials(db_username=secret[POSTGRES_USERNAME_KEY], db_password=secret[POSTGRES_PASSWORD_KEY])
-
-    # Setters
-    def set_db_credentials(self, db_username, db_password):
-        "Sets db credentials - username and password"
-        self.__db_username = db_username
-        self.__db_password = db_password
-
-    def set_container_name(self, container_name):
-        "Sets docker container name"
-        self.__container_name = container_name
-
-    def set_host_port(self, host_port):
-        "Sets docker host port"
-        self.__host_port = host_port
-
-    def set_host_volume(self, host_volume):
-        "Sets docker host volume"
-        self.__host_volume = host_volume
+        self.__db_username = secret[POSTGRES_USERNAME_KEY]
+        self.__db_password = secret[POSTGRES_PASSWORD_KEY]
 
     # Getters
     def get_db_credentials(self):
