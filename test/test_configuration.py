@@ -1,13 +1,13 @@
 import src.constants as consts
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
 from awsiot.greengrasscoreipc.model import GetConfigurationResponse, GetSecretValueResponse, SecretValue
-from src.configuration import ComponentConfigurationHandler
+from src.configuration_handler import ComponentConfigurationIPCHandler
 
 
 def test_configuration_default_values(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
     mock_ipc_client = GreengrassCoreIPCClientV2()
-    configuration_handler = ComponentConfigurationHandler(mock_ipc_client)
+    configuration_handler = ComponentConfigurationIPCHandler(mock_ipc_client)
 
     configuration = configuration_handler.get_configuration()
     assert configuration.get_container_name() == "greengrass_postgresql"
@@ -25,7 +25,7 @@ def test_configuration_set_container_config(mocker):
     mock_ipc_get_config = mocker.patch.object(
         GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response
     )
-    configuration_handler = ComponentConfigurationHandler(ipc_client)
+    configuration_handler = ComponentConfigurationIPCHandler(ipc_client)
     configuration = configuration_handler.get_configuration()
     assert mock_ipc_get_config.call_count == 1
 
@@ -49,7 +49,7 @@ def test_configuration_set_credential_secret_config(mocker):
         )
     )
     mock_ipc_get_secret = mocker.patch.object(GreengrassCoreIPCClientV2, "get_secret_value", return_value=secret_value_reponse)
-    configuration_handler = ComponentConfigurationHandler(ipc_client)
+    configuration_handler = ComponentConfigurationIPCHandler(ipc_client)
 
     configuration = configuration_handler.get_configuration()
     assert mock_ipc_get_config.call_count == 1
