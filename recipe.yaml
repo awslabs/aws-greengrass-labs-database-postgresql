@@ -10,6 +10,7 @@ Manifests:
     Lifecycle:
       Run:
         script: |-
+          export PYTHONPATH=$PYTHONPATH:{artifacts:decompressedPath}/aws-greengrass-labs-database-postgresql/
           python3 -u {artifacts:decompressedPath}/aws-greengrass-labs-database-postgresql/src/manage_postgresql.py
     Artifacts:
       - URI: s3://aws-greengrass-labs-database-postgresql.zip

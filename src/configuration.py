@@ -1,16 +1,12 @@
-from awsiot.greengrasscoreipc.model import GetConfigurationResponse, GetSecretValueResponse
+import json
 
-from src.constants import (
-    CONTAINER_MAPPING_KEY,
-    CONTAINER_NAME_KEY,
-    DEFAULT_CONTAINER_NAME,
-    DEFAULT_HOST_PORT,
-    DEFAULT_HOST_VOLUME,
-    HOST_PORT_KEY,
-    HOST_VOLUME_KEY,
-    POSTGRES_PASSWORD_KEY,
-    POSTGRES_USERNAME_KEY,
-)
+from awsiot.greengrasscoreipc.model import (GetConfigurationResponse,
+                                            GetSecretValueResponse)
+
+from src.constants import (CONTAINER_MAPPING_KEY, CONTAINER_NAME_KEY,
+                           DEFAULT_CONTAINER_NAME, DEFAULT_HOST_PORT,
+                           DEFAULT_HOST_VOLUME, HOST_PORT_KEY, HOST_VOLUME_KEY,
+                           POSTGRES_PASSWORD_KEY, POSTGRES_USERNAME_KEY)
 
 
 class ComponentConfiguration:
@@ -62,7 +58,7 @@ class ComponentConfiguration:
         """
         if not secret_response:
             return
-        secret = secret_response.secret_value.secret_string
+        secret = json.loads(secret_response.secret_value.secret_string)
         self.__db_username = secret[POSTGRES_USERNAME_KEY]
         self.__db_password = secret[POSTGRES_PASSWORD_KEY]
 
