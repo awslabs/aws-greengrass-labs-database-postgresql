@@ -20,9 +20,6 @@ def test_container_management_update_event(mocker):
     mocker.patch("src.configuration_handler", return_value=None)
     mock_ipc_client = GreengrassCoreIPCClientV2()
     mock_configuration_handler = ComponentConfigurationIPCHandler(mock_ipc_client)
-    mock__on_configuration_update_event = mocker.patch.object(
-        ContainerManagement, "_on_configuration_update_event", return_value=None
-    )
 
     def this_triggers_callbacks(*args, **kwargs):
         config_update_events = ConfigurationUpdateEvents()
@@ -32,7 +29,10 @@ def test_container_management_update_event(mocker):
     mock_subscribe_config = mocker.patch.object(
         mock_ipc_client, "subscribe_to_configuration_update", side_effect=this_triggers_callbacks
     )
+    mock_manage_postgresql_contaienr = mocker.patch.object(
+        ContainerManagement, "manage_postgresql_container", return_value=None
+    )
     ContainerManagement(mock_ipc_client, mock_configuration_handler)
 
     assert mock_subscribe_config.call_count == 1
-    assert mock__on_configuration_update_event.call_count == 1
+    assert mock_manage_postgresql_contaienr.call_count == 1

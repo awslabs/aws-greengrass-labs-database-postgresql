@@ -45,20 +45,13 @@ class ContainerManagement:
         # TODO: Use configuration
         print(configuration)
 
-        # Stop if it exists
-        self.stop_container()
-
-        # Remove if it exists
-        self.remove_container()
-
-        # Run the container
-        self.run_container()
+        raise Exception("Not implemented")
 
     def stop_container(self):
-        pass
+        raise Exception("Not implemented")
 
     def remove_container(self):
-        pass
+        raise Exception("Not implemented")
 
     def run_container(self):
-        pass
+        raise Exception("Not implemented")
