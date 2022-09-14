@@ -39,7 +39,7 @@ class ContainerManagement:
 
     def _on_configuration_update_event(self, event):
         print(event)
-        self.manage_postgresql_container(self.config_handler.get_configuration())
+        # self.manage_postgresql_container(self.config_handler.get_configuration())
 
     def manage_postgresql_container(self, configuration: ComponentConfiguration):
         # TODO: Use configuration

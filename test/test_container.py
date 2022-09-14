@@ -4,17 +4,6 @@ from src.configuration_handler import ComponentConfigurationIPCHandler
 from src.container import ContainerManagement
 
 
-def test_container_management_init(mocker):
-    mocker.patch("awsiot.greengrasscoreipc", return_value=None)
-    mocker.patch("src.configuration_handler", return_value=None)
-    mock_ipc_client = GreengrassCoreIPCClientV2()
-    mock_configuration_handler = ComponentConfigurationIPCHandler(mock_ipc_client)
-    mock_subscribe_config = mocker.patch.object(mock_ipc_client, "subscribe_to_configuration_update", return_value=None)
-    ContainerManagement(mock_ipc_client, mock_configuration_handler)
-
-    assert mock_subscribe_config.call_count == 1
-
-
 def test_container_management_update_event(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
     mocker.patch("src.configuration_handler", return_value=None)
