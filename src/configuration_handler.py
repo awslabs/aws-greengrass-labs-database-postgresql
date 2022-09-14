@@ -1,7 +1,5 @@
-import logging
-
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
-from awsiot.greengrasscoreipc.model import ConfigurationUpdateEvents, GetConfigurationResponse, GetSecretValueResponse
+from awsiot.greengrasscoreipc.model import GetConfigurationResponse, GetSecretValueResponse
 
 from src.configuration import ComponentConfiguration
 from src.constants import DB_CREDENTIAL_SECRET_KEY
@@ -14,35 +12,6 @@ class ComponentConfigurationIPCHandler:
 
     def __init__(self, ipc_client: GreengrassCoreIPCClientV2) -> None:
         self.__ipc_client = ipc_client
-
-    def subscribe_to_configuration_updates(self):
-        """
-        Subscribes to the component configuration updates over IPC using callbacks for the stream events.
-        Any new configuration update to the component triggers on_stream_event -> on_configuration_update_event callback.
-
-        Args
-            None
-
-        Returns
-            None
-        """
-
-        def __on_configuration_update_event(event: ConfigurationUpdateEvents):
-            # Will manage docker container based on updates
-            print(event)
-
-        def __on_stream_error_event(error: Exception) -> bool:
-            logging.error("Exception occurred in the stream while subscribing to the  configuration updates", exc_info=error)
-            return False  # Keeps the stream open
-
-        def __on_stream_closed_event():
-            logging.info("Subscribe to configuration update stream closed.")
-
-        self.__ipc_client.subscribe_to_configuration_update(
-            on_stream_event=__on_configuration_update_event,
-            on_stream_error=__on_stream_error_event,
-            on_stream_closed=__on_stream_closed_event,
-        )
 
     def get_configuration(self) -> ComponentConfiguration:
         """

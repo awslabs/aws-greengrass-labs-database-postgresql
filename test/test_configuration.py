@@ -1,8 +1,6 @@
 import src.constants as consts
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
-from awsiot.greengrasscoreipc.model import (GetConfigurationResponse,
-                                            GetSecretValueResponse,
-                                            SecretValue)
+from awsiot.greengrasscoreipc.model import GetConfigurationResponse, GetSecretValueResponse, SecretValue
 from src.configuration_handler import ComponentConfigurationIPCHandler
 
 

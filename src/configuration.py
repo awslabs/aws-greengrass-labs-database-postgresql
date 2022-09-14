@@ -1,12 +1,18 @@
 import json
 
-from awsiot.greengrasscoreipc.model import (GetConfigurationResponse,
-                                            GetSecretValueResponse)
+from awsiot.greengrasscoreipc.model import GetConfigurationResponse, GetSecretValueResponse
 
-from src.constants import (CONTAINER_MAPPING_KEY, CONTAINER_NAME_KEY,
-                           DEFAULT_CONTAINER_NAME, DEFAULT_HOST_PORT,
-                           DEFAULT_HOST_VOLUME, HOST_PORT_KEY, HOST_VOLUME_KEY,
-                           POSTGRES_PASSWORD_KEY, POSTGRES_USERNAME_KEY)
+from src.constants import (
+    CONTAINER_MAPPING_KEY,
+    CONTAINER_NAME_KEY,
+    DEFAULT_CONTAINER_NAME,
+    DEFAULT_HOST_PORT,
+    DEFAULT_HOST_VOLUME,
+    HOST_PORT_KEY,
+    HOST_VOLUME_KEY,
+    POSTGRES_PASSWORD_KEY,
+    POSTGRES_USERNAME_KEY,
+)
 
 
 class ComponentConfiguration:
