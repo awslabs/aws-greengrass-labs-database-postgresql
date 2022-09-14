@@ -15,13 +15,7 @@ def test_container_management_update_event(mocker):
         kwargs["on_stream_event"](config_update_events)
         return SubscribeToConfigurationUpdateResponse()
 
-    mock_subscribe_config = mocker.patch.object(
-        mock_ipc_client, "subscribe_to_configuration_update", side_effect=this_triggers_callbacks
-    )
-    mock_manage_postgresql_contaienr = mocker.patch.object(
-        ContainerManagement, "manage_postgresql_container", return_value=None
-    )
-    ContainerManagement(mock_ipc_client, mock_configuration_handler)
+    mocker.patch.object(mock_ipc_client, "subscribe_to_configuration_update", side_effect=this_triggers_callbacks)
+    mocker.patch.object(ContainerManagement, "manage_postgresql_container", return_value=None)
 
-    assert mock_subscribe_config.call_count == 1
-    assert mock_manage_postgresql_contaienr.call_count == 1
+    ContainerManagement(mock_ipc_client, mock_configuration_handler)
