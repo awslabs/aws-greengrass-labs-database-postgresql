@@ -45,7 +45,7 @@ def test_configuration_set_credential_secret_config(mocker):
 
     secret_value_reponse = GetSecretValueResponse(
         secret_value=SecretValue(
-            secret_string='{"postgresql_username": "this-is-a-username", "postgresql_password": "this-is-a-password"}'
+            secret_string='{"POSTGRES_USER": "this-is-a-username", "POSTGRES_PASSWORD": "this-is-a-password"}'
         )
     )
     mock_ipc_get_secret = mocker.patch.object(GreengrassCoreIPCClientV2, "get_secret_value", return_value=secret_value_reponse)
