@@ -67,23 +67,23 @@ class ContainerManagement:
                 self.postgresql_container = self.docker_client.containers.get(configuration.get_container_name())
             except Exception as exception:
                 logging.exception(exception, exc_info=True)
-        self.recreate_container(configuration)
+        self._recreate_container(configuration)
 
-    def recreate_container(self, configuration):
+    def _recreate_container(self, configuration):
         if self.postgresql_container:
-            self.stop_container()
-            self.remove_container()
-        self.run_container(configuration)
+            self._stop_container()
+            self._remove_container()
+        self._run_container(configuration)
 
-    def stop_container(self):
+    def _stop_container(self):
         logging.info("Stopping the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.stop()
 
-    def remove_container(self):
+    def _remove_container(self):
         logging.info("Removing the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.remove()
 
-    def run_container(self, config: ComponentConfiguration):
+    def _run_container(self, config: ComponentConfiguration):
         db_username, db_password = config.get_db_credentials()
         postgres_env = {
             POSTGRES_USERNAME_KEY: db_username,
@@ -103,11 +103,14 @@ class ContainerManagement:
             volumes=[volume_mapping],
             detach=True,
         )
-        logging.info("Following the docker container logs....")
-        logs_thread = Thread(target=self.follow_container_logs)
-        logs_thread.start()
+        self._follow_container_logs()
 
-    def follow_container_logs(self):
-        logs_from_container = self.postgresql_container.logs(follow=True, stream=True)
-        for log in logs_from_container:
-            logging.info(log.decode())
+    def _follow_container_logs(self):
+        def _follow_logs():
+            logs_from_container = self.postgresql_container.logs(follow=True, stream=True)
+            for log in logs_from_container:
+                logging.info(log.decode())
+
+        logging.info("Following the docker container logs....")
+        logs_thread = Thread(target=_follow_logs)
+        logs_thread.start()
