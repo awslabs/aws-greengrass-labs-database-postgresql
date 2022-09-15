@@ -14,11 +14,11 @@ ComponentConfiguration:
       aws.greengrass.SecretManager:
         aws.greengrass.labs.database.PostgreSQL:secrets:1:
           operations:
-          - "aws.greengrass#GetSecretValue"
+            - "aws.greengrass#GetSecretValue"
           policyDescription: "Allows access to the secret containing PostgreSQL credentials."
           resources:
-          - "arn:aws:secretsmanager:region:account:secret:secret-id"
-  DBCredentialSecret: "arn:aws:secretsmanager:region:account:secret:secret-id"
+            - "arn:aws:secretsmanager:region:account:secret:secret-id"
+    DBCredentialSecret: "arn:aws:secretsmanager:region:account:secret:secret-id"
 Manifests:
   - Platform:
       os: /darwin|linux/
