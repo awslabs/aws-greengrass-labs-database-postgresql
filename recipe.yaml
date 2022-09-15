@@ -4,6 +4,21 @@ ComponentName: aws.greengrass.labs.database.PostgreSQL
 ComponentVersion: '1.0.0'
 ComponentDescription: 'A component that provisions and manages a local PostgreSQL instance in a Docker container.'
 ComponentPublisher: Amazon
+ComponentDependencies:
+  aws.greengrass.SecretManager:
+    VersionRequirement: ~2.1.0
+    DependencyType: HARD
+ComponentConfiguration:
+  DefaultConfiguration:
+    accessControl:
+      aws.greengrass.SecretManager:
+        aws.greengrass.labs.database.PostgreSQL:secrets:1:
+          operations:
+            - "aws.greengrass#GetSecretValue"
+          policyDescription: "Allows access to the secret containing PostgreSQL credentials."
+          resources:
+            - "arn:aws:secretsmanager:region:account:secret:secret-id"
+    DBCredentialSecret: "arn:aws:secretsmanager:region:account:secret:secret-id"
 Manifests:
   - Platform:
       os: /darwin|linux/
