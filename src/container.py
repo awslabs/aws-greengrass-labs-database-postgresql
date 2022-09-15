@@ -1,7 +1,9 @@
 import logging
+from threading import Thread
 
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
 from awsiot.greengrasscoreipc.model import ConfigurationUpdateEvents
+from docker.models.containers import Container
 
 from src.configuration import ComponentConfiguration
 from src.configuration_handler import ComponentConfigurationIPCHandler
@@ -19,7 +21,7 @@ from src.constants import (
 
 class ContainerManagement:
     def __init__(
-        self, ipc_client: GreengrassCoreIPCClientV2, docker_client, config_handler: ComponentConfigurationIPCHandler
+        self, ipc_client: GreengrassCoreIPCClientV2, docker_client: Container, config_handler: ComponentConfigurationIPCHandler
     ) -> None:
         self.__ipc_client = ipc_client
         self.config_handler = config_handler
@@ -53,10 +55,11 @@ class ContainerManagement:
         )
 
     def _on_configuration_update_event(self, events: ConfigurationUpdateEvents):
-        if events.configuration_update_event:
-            key_path = events.configuration_update_event.key_path
-            if DB_CREDENTIAL_SECRET_KEY not in key_path:
-                self.manage_postgresql_container(self.config_handler.get_configuration())
+        if not events.configuration_update_event:
+            return
+        key_path = events.configuration_update_event.key_path
+        if DB_CREDENTIAL_SECRET_KEY not in key_path:
+            self.manage_postgresql_container(self.config_handler.get_configuration())
 
     def manage_postgresql_container(self, configuration: ComponentConfiguration):
         if not self.postgresql_container:
@@ -101,7 +104,8 @@ class ContainerManagement:
             detach=True,
         )
         logging.info("Following the docker container logs....")
-        self.follow_container_logs()
+        logs_thread = Thread(target=self.follow_container_logs)
+        logs_thread.start()
 
     def follow_container_logs(self):
         logs_from_container = self.postgresql_container.logs(follow=True, stream=True)
