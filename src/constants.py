@@ -15,3 +15,5 @@ DEFAULT_DB_NAME = "postgres"
 POSTGRES_DB_KEY = "POSTGRES_DB"
 DEFAULT_CONTAINER_VOLUME = "/var/lib/postgresql/data"
 POSTGRES_IMAGE = "postgres:alpine3.16"
+POSTGRES_SERVER_CONFIGURATION_FILES_KEY = "ConfigurationFiles"
+SUPPORTED_CONFIGURATION_FILES = ["postgresql.conf", "pg_hba.conf", "pg_ident.conf"]

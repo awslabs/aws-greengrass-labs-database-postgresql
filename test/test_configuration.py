@@ -59,3 +59,22 @@ def test_configuration_set_credential_secret_config(mocker):
     assert configuration.get_db_credentials() == ("this-is-a-username", "this-is-a-password")
     assert configuration.get_host_volume() == consts.DEFAULT_HOST_VOLUME
     assert configuration.get_host_port() == consts.DEFAULT_HOST_PORT
+
+
+def test_configuration_set_conf_volumes(mocker):
+    mocker.patch("awsiot.greengrasscoreipc", return_value=None)
+    ipc_client = GreengrassCoreIPCClientV2()
+    get_configuration_response = GetConfigurationResponse(
+        value={
+            "ConfigurationFiles": {
+                "postgresql.conf": "/path/to/custom/postgresql.conf",
+                "unsupported.conf": "/path/to/custom/unsupported.conf",
+            }
+        }
+    )
+    mocker.patch.object(GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response)
+
+    configuration_handler = ComponentConfigurationIPCHandler(ipc_client)
+
+    configuration = configuration_handler.get_configuration()
+    assert configuration.get_server_configuration_files() == {"postgresql.conf": "/path/to/custom/postgresql.conf"}

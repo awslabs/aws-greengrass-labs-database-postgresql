@@ -101,7 +101,8 @@ def test_container_management_run_container(mocker):
                 "HostVolume": "/some/volume/",
                 "ContainerName": "some-container-name",
                 "DBCredentialSecret": "secret",
-            }
+            },
+            "ConfigurationFiles": {"postgresql.conf": "/path/to/custom/postgresql.conf"},
         }
     )
 
