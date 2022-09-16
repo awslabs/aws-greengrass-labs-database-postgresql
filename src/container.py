@@ -15,6 +15,7 @@ from src.constants import (
     POSTGRES_DB_KEY,
     POSTGRES_IMAGE,
     POSTGRES_PASSWORD_KEY,
+    POSTGRES_SERVER_CONFIGURATION_FILES_KEY,
     POSTGRES_USERNAME_KEY,
 )
 
@@ -59,15 +60,23 @@ class ContainerManagement:
             return
         key_path = events.configuration_update_event.key_path
         if DB_CREDENTIAL_SECRET_KEY not in key_path:
-            self.manage_postgresql_container(self.config_handler.get_configuration())
+            self.manage_postgresql_container(self.config_handler.get_configuration(), key_path)
 
-    def manage_postgresql_container(self, configuration: ComponentConfiguration):
+    def manage_postgresql_container(self, configuration: ComponentConfiguration, key_path=[]):
         if not self.postgresql_container:
             try:
                 self.postgresql_container = self.docker_client.containers.get(configuration.get_container_name())
             except Exception as exception:
                 logging.exception(exception, exc_info=True)
-        self._recreate_container(configuration)
+
+        if POSTGRES_SERVER_CONFIGURATION_FILES_KEY not in key_path:
+            self._recreate_container(configuration)
+        else:
+            self._restart_container()
+
+    def _restart_container(self):
+        if self.postgresql_container:
+            self.postgresql_container.restart()
 
     def _recreate_container(self, configuration):
         if self.postgresql_container:
@@ -83,6 +92,15 @@ class ContainerManagement:
         logging.info("Removing the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.remove()
 
+    def _get_volumes(self, config: ComponentConfiguration):
+        volumes = [f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}"]
+        server_configuration_files = config.get_pg_config_files()
+        if not server_configuration_files:
+            return volumes
+        for conf_file, file_abs_path in server_configuration_files.items():
+            volumes.append(f"{file_abs_path}:{DEFAULT_CONTAINER_VOLUME}/{conf_file}")
+        return volumes
+
     def _run_container(self, config: ComponentConfiguration):
         db_username, db_password = config.get_db_credentials()
         postgres_env = {
@@ -92,7 +110,6 @@ class ContainerManagement:
         }
 
         postgres_ports = {DEFAULT_CONTAINER_PORT: config.get_host_port()}
-        volume_mapping = f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}"
         container_name = config.get_container_name()
         logging.info("Running the docker container : %s", container_name)
         self.postgresql_container = self.docker_client.containers.run(
@@ -100,7 +117,7 @@ class ContainerManagement:
             name=container_name,
             ports=postgres_ports,
             environment=postgres_env,
-            volumes=[volume_mapping],
+            volumes=self._get_volumes(config),
             detach=True,
         )
         self._follow_container_logs()

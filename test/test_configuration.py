@@ -19,11 +19,11 @@ def test_configuration_default_values(mocker):
 def test_configuration_set_container_config(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
     ipc_client = GreengrassCoreIPCClientV2()
-    get_configuration_response = GetConfigurationResponse(
+    configuration_response = GetConfigurationResponse(
         value={"ContainerMapping": {"HostPort": "8000", "HostVolume": "/some/volume/", "ContainerName": "some-container-name"}}
     )
     mock_ipc_get_config = mocker.patch.object(
-        GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response
+        GreengrassCoreIPCClientV2, "get_configuration", return_value=configuration_response
     )
     configuration_handler = ComponentConfigurationIPCHandler(ipc_client)
     configuration = configuration_handler.get_configuration()
@@ -38,9 +38,9 @@ def test_configuration_set_container_config(mocker):
 def test_configuration_set_credential_secret_config(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
     ipc_client = GreengrassCoreIPCClientV2()
-    get_configuration_response = GetConfigurationResponse(value={"DBCredentialSecret": "secret-arn"})
+    configuration_response = GetConfigurationResponse(value={"DBCredentialSecret": "secret-arn"})
     mock_ipc_get_config = mocker.patch.object(
-        GreengrassCoreIPCClientV2, "get_configuration", return_value=get_configuration_response
+        GreengrassCoreIPCClientV2, "get_configuration", return_value=configuration_response
     )
 
     secret_value_reponse = GetSecretValueResponse(
@@ -59,3 +59,27 @@ def test_configuration_set_credential_secret_config(mocker):
     assert configuration.get_db_credentials() == ("this-is-a-username", "this-is-a-password")
     assert configuration.get_host_volume() == consts.DEFAULT_HOST_VOLUME
     assert configuration.get_host_port() == consts.DEFAULT_HOST_PORT
+
+
+def test_configuration_set_conf_volumes(mocker):
+    mocker.patch("awsiot.greengrasscoreipc", return_value=None)
+    ipc_client = GreengrassCoreIPCClientV2()
+    configuration_response = GetConfigurationResponse(
+        value={
+            "ConfigurationFiles": {
+                "postgresql.conf": "/path/to/custom/postgresql.conf",
+                "unsupported.conf": "/path/to/custom/unsupported.conf",
+                "pg_hba.conf": "conf",
+                "pg_ident.conf": "conf",
+            }
+        }
+    )
+    mocker.patch.object(GreengrassCoreIPCClientV2, "get_configuration", return_value=configuration_response)
+
+    mocker.patch("pathlib.Path.is_file", return_value=True)
+    configuration_handler = ComponentConfigurationIPCHandler(ipc_client)
+    pg_conf_files = configuration_handler.get_configuration().get_pg_config_files()
+    assert len(pg_conf_files) == 3
+    assert "postgresql.conf" in pg_conf_files
+    assert "pg_hba.conf" in pg_conf_files
+    assert "pg_ident.conf" in pg_conf_files
