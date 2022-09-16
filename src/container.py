@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from threading import Thread
 
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
@@ -93,15 +92,13 @@ class ContainerManagement:
         logging.info("Removing the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.remove()
 
-    def _get_volume_mappings(self, config: ComponentConfiguration):
-        volumes = []
-        volumes.append(f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}")
-        server_configuration_files = config.get_server_configuration_files()
+    def _get_volumes(self, config: ComponentConfiguration):
+        volumes = [f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}"]
+        server_configuration_files = config.get_pg_config_files()
         if not server_configuration_files:
             return volumes
-        for conf_file, file_path in server_configuration_files.items():
-            file_path_abs = Path(file_path).resolve().absolute()
-            volumes.append(f"{file_path_abs}:{DEFAULT_CONTAINER_VOLUME}/{conf_file}")
+        for conf_file, file_abs_path in server_configuration_files.items():
+            volumes.append(f"{file_abs_path}:{DEFAULT_CONTAINER_VOLUME}/{conf_file}")
         return volumes
 
     def _run_container(self, config: ComponentConfiguration):
@@ -120,7 +117,7 @@ class ContainerManagement:
             name=container_name,
             ports=postgres_ports,
             environment=postgres_env,
-            volumes=self._get_volume_mappings(config),
+            volumes=self._get_volumes(config),
             detach=True,
         )
         self._follow_container_logs()
