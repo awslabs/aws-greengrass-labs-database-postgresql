@@ -82,12 +82,10 @@ class ContainerManagement:
         self.postgresql_container.restart()
 
     def _recreate_container(self, configuration):
-        self._stop_and_remove_container()
+        if self.postgresql_container:
+            self._stop_container()
+            self._remove_container()
         self._run_container(configuration)
-
-    def _stop_and_remove_container(self):
-        self._stop_container()
-        self._remove_container()
 
     def _stop_container(self):
         if not self.postgresql_container:
@@ -140,7 +138,3 @@ class ContainerManagement:
         logging.info("Following the docker container logs....")
         logs_thread = Thread(target=_follow_logs)
         logs_thread.start()
-
-    def shutdown_container(self):
-        self._set_container(self.config_handler.get_configuration())
-        self._stop_and_remove_container()
