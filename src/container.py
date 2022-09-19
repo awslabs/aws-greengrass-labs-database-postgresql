@@ -28,7 +28,6 @@ class ContainerManagement:
         self.config_handler = config_handler
         self.docker_client = docker_client
         self.postgresql_container = None
-        self.subscribe_to_configuration_updates()
 
     def subscribe_to_configuration_updates(self):
         """
@@ -62,33 +61,43 @@ class ContainerManagement:
         if DB_CREDENTIAL_SECRET_KEY not in key_path:
             self.manage_postgresql_container(self.config_handler.get_configuration(), key_path)
 
-    def manage_postgresql_container(self, configuration: ComponentConfiguration, key_path=[]):
+    def _set_container(self, configuration: ComponentConfiguration):
         if not self.postgresql_container:
             try:
                 self.postgresql_container = self.docker_client.containers.get(configuration.get_container_name())
             except Exception as exception:
                 logging.exception(exception, exc_info=True)
 
+    def manage_postgresql_container(self, configuration: ComponentConfiguration, key_path=[]):
+        self._set_container(configuration)
         if POSTGRES_SERVER_CONFIGURATION_FILES_KEY not in key_path:
             self._recreate_container(configuration)
         else:
             self._restart_container()
 
     def _restart_container(self):
-        if self.postgresql_container:
-            self.postgresql_container.restart()
+        if not self.postgresql_container:
+            return
+        logging.info("Restarting the docker container : %s", self.postgresql_container.name)
+        self.postgresql_container.restart()
 
     def _recreate_container(self, configuration):
-        if self.postgresql_container:
-            self._stop_container()
-            self._remove_container()
+        self._stop_and_remove_container()
         self._run_container(configuration)
 
+    def _stop_and_remove_container(self):
+        self._stop_container()
+        self._remove_container()
+
     def _stop_container(self):
+        if not self.postgresql_container:
+            return
         logging.info("Stopping the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.stop()
 
     def _remove_container(self):
+        if not self.postgresql_container:
+            return
         logging.info("Removing the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.remove()
 
@@ -131,3 +140,7 @@ class ContainerManagement:
         logging.info("Following the docker container logs....")
         logs_thread = Thread(target=_follow_logs)
         logs_thread.start()
+
+    def shutdown_container(self):
+        self._set_container(self.config_handler.get_configuration())
+        self._stop_and_remove_container()

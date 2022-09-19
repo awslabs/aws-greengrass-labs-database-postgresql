@@ -64,7 +64,7 @@ def test_container_management_create_or_recreate_container(mocker):
     mock_remove_container = mocker.patch.object(Container, "remove", return_value=None)
     mock_logs_container = mocker.patch.object(Container, "logs", return_value=[])
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
-
+    cm.subscribe_to_configuration_updates()
     assert not mock_remove_container.called
     assert not mock_stop_container.called
 
@@ -113,8 +113,8 @@ def test_container_management_run_container(mocker):
     spy_docker_run = mocker.spy(docker.DockerClient.containers, "run")
     mock_remove_container = mocker.patch.object(Container, "remove", return_value=None)
     mock_stop_container = mocker.patch.object(Container, "stop", return_value=None)
-    ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
-
+    cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
+    cm.subscribe_to_configuration_updates()
     assert not mock_remove_container.called
     assert not mock_stop_container.called
     args, kwargs = spy_docker_run.call_args
