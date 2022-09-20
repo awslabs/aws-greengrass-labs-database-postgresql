@@ -80,6 +80,7 @@ class ContainerManagement:
             return
         logging.info("Restarting the docker container : %s", self.postgresql_container.name)
         self.postgresql_container.restart()
+        self._follow_container_logs()
 
     def _recreate_container(self, configuration):
         if self.postgresql_container:

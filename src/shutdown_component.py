@@ -31,5 +31,6 @@ def main():
     docker_client = docker.DockerClient(version="auto")
     cleanup_container(docker_client, container_name)
 
+
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from pathlib import Path
 
 from awsiot.greengrasscoreipc.model import GetConfigurationResponse, GetSecretValueResponse
@@ -49,11 +50,11 @@ class ComponentConfiguration:
         if CONTAINER_MAPPING_KEY not in component_config:
             return
         container_config = component_config[CONTAINER_MAPPING_KEY]
-        if HOST_PORT_KEY in container_config:
+        if container_config.get(HOST_PORT_KEY):
             self.__host_port = container_config[HOST_PORT_KEY]
-        if HOST_VOLUME_KEY in container_config:
+        if container_config.get(HOST_VOLUME_KEY):
             self.__host_volume = container_config[HOST_VOLUME_KEY]
-        if CONTAINER_NAME_KEY in container_config:
+        if container_config.get(CONTAINER_NAME_KEY):
             self.__container_name = container_config[CONTAINER_NAME_KEY]
 
     def _set_configuration_files(self, config_response):
@@ -92,8 +93,37 @@ class ComponentConfiguration:
         if not secret_response:
             return
         secret = json.loads(secret_response.secret_value.secret_string)
+        if POSTGRES_USERNAME_KEY not in secret or POSTGRES_PASSWORD_KEY not in secret:
+            raise Exception(
+                "Missing postgresql credentials. Please provide a valid secret with postgresql username"
+                f" ({POSTGRES_USERNAME_KEY}) and password ({POSTGRES_PASSWORD_KEY}) credentials."
+            )
+
+        if not self._valid_password(secret[POSTGRES_PASSWORD_KEY]):
+            raise Exception(
+                "Invalid postgresql password. Password must be at least 16 character long with uppercase and lowercase"
+                " letters, numbers, and special characters."
+            )
         self.__db_username = secret[POSTGRES_USERNAME_KEY]
         self.__db_password = secret[POSTGRES_PASSWORD_KEY]
+
+    def _valid_password(self, password):
+        if len(password) < 16:
+            logging.warning("The length of the postgresql password should be at least 16 character long")
+            return False
+        if not re.search("[0-9]", password):
+            logging.warning("Provided postgresql password should contain at least one digit")
+            return False
+        if not re.search("[a-z]", password):
+            logging.warning("Provided postgresql password should contain at least one lowercase letter")
+            return False
+        if not re.search("[A-Z]", password):
+            logging.warning("Provided postgresql password should contain at least one uppercase letter")
+            return False
+        if not re.search("[^a-zA-Z0-9]", password):
+            logging.warning("Provided postgresql password should contain at least one special character")
+            return False
+        return True
 
     # Getters
     def get_db_credentials(self):

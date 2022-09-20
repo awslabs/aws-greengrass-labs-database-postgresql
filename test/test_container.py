@@ -152,7 +152,7 @@ def test_container_management_restart_container(mocker):
     )
 
     mocker.patch.object(GreengrassCoreIPCClientV2, "get_configuration", return_value=mock_get_configuration_response)
-
+    mocker.patch("threading.Thread", return_value=None)
     mocker.patch("docker.DockerClient.containers", return_value=ContainerCollection())
     mocker.patch.object(docker.DockerClient.containers, "get", return_value=Container())
     mocker.patch("pathlib.Path.is_file", return_value=True)
@@ -160,9 +160,11 @@ def test_container_management_restart_container(mocker):
     mock_stop_container = mocker.patch.object(Container, "stop", return_value=None)
     mock_run_container = mocker.patch.object(docker.DockerClient.containers, "run", return_value=None)
     mock_restart_container = mocker.patch.object(Container, "restart", return_value=None)
+    mock_logs_container = mocker.patch.object(Container, "logs", return_value=[])
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
     cm.subscribe_to_configuration_updates()
     assert not mock_remove_container.called
     assert not mock_stop_container.called
     assert not mock_run_container.called
     assert mock_restart_container.called
+    assert mock_logs_container.called
