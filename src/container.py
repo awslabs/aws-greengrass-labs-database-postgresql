@@ -1,5 +1,5 @@
 import logging
-from threading import Thread
+from threading import Lock, Thread
 
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
 from awsiot.greengrasscoreipc.model import ConfigurationUpdateEvents
@@ -28,6 +28,8 @@ class ContainerManagement:
         self.config_handler = config_handler
         self.docker_client = docker_client
         self.postgresql_container = None
+        self.lock = Lock()
+        self.current_configuration = config_handler.get_configuration()
 
     def subscribe_to_configuration_updates(self):
         """
@@ -59,7 +61,11 @@ class ContainerManagement:
             return
         key_path = events.configuration_update_event.key_path
         if DB_CREDENTIAL_SECRET_KEY not in key_path:
-            self.manage_postgresql_container(self.config_handler.get_configuration(), key_path)
+            with self.lock:
+                component_configuration = self.config_handler.get_configuration()
+                if vars(self.current_configuration) != vars(component_configuration):
+                    self.current_configuration = component_configuration
+                    self.manage_postgresql_container(component_configuration, key_path)
 
     def _set_container(self, configuration: ComponentConfiguration):
         if not self.postgresql_container:
