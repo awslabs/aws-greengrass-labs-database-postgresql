@@ -1,6 +1,7 @@
 import logging
 from threading import Lock, Thread
 
+import docker.errors
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
 from awsiot.greengrasscoreipc.model import ConfigurationUpdateEvents
 from docker.models.containers import Container
@@ -70,11 +71,14 @@ class ContainerManagement:
         if not self.postgresql_container:
             try:
                 self.postgresql_container = self.docker_client.containers.get(configuration.get_container_name())
+            except docker.errors.NotFound as not_found:
+                logging.debug("Exception while getting the container: ", not_found.explanation)
             except Exception as exception:
                 logging.exception(exception, exc_info=True)
 
     def manage_postgresql_container(self, configuration: ComponentConfiguration):
         self._set_container(configuration)
+        logging.info("Creating a new docker container: %s as the configuration changed", configuration.get_container_name())
         self._recreate_container(configuration)
 
     def _recreate_container(self, configuration):
@@ -87,13 +91,23 @@ class ContainerManagement:
         if not self.postgresql_container:
             return
         logging.info("Stopping the docker container : %s", self.postgresql_container.name)
-        self.postgresql_container.stop()
+        try:
+            self.postgresql_container.stop()
+        except docker.errors.NotFound as e:
+            logging.debug(
+                "Could not stop the container: %s as it does not exist : " + e.explanation, self.postgresql_container.name
+            )
 
     def _remove_container(self):
         if not self.postgresql_container:
             return
         logging.info("Removing the docker container : %s", self.postgresql_container.name)
-        self.postgresql_container.remove()
+        try:
+            self.postgresql_container.remove()
+        except docker.errors.NotFound as e:
+            logging.debug(
+                "Could not remove the container: %s as it does not exist : " + e.explanation, self.postgresql_container.name
+            )
 
     def _get_volumes(self, config: ComponentConfiguration):
         volumes = [f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}"]
@@ -131,6 +145,6 @@ class ContainerManagement:
             for log in logs_from_container:
                 logging.info(log.decode())
 
-        logging.info("Following the docker container logs....")
+        logging.info("Following the docker container: %s logs....", self.postgresql_container.name)
         logs_thread = Thread(target=_follow_logs)
         logs_thread.start()
