@@ -177,3 +177,4 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 
 This project is licensed under the Apache-2.0 License.
 
+This project also uses but does not distribute the postgres:alpine3.16 Docker image from Dockerhub, which is under the [MIT License](https://github.com/docker-library/postgres/blob/master/LICENSE). You can view the PostgreSQL license [here](https://www.postgresql.org/about/licence/).  
