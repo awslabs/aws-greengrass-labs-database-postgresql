@@ -63,7 +63,7 @@ class ContainerManagement:
         if DB_CREDENTIAL_SECRET_KEY not in key_path:
             with self.lock:
                 component_configuration = self.config_handler.get_configuration()
-                if vars(self.current_configuration) != vars(component_configuration):
+                if self.current_configuration != component_configuration:
                     self.current_configuration = component_configuration
                     self.manage_postgresql_container(component_configuration, key_path)
 
