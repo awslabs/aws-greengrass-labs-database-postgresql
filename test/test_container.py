@@ -4,9 +4,12 @@ from awsiot.greengrasscoreipc.model import (
     ConfigurationUpdateEvent,
     ConfigurationUpdateEvents,
     GetConfigurationResponse,
+    GetSecretValueResponse,
+    SecretValue,
     SubscribeToConfigurationUpdateResponse,
 )
 from docker.models.containers import Container, ContainerCollection
+from src.configuration import ComponentConfiguration
 from src.configuration_handler import ComponentConfigurationIPCHandler
 from src.constants import POSTGRES_IMAGE
 from src.container import ContainerManagement
@@ -53,7 +56,11 @@ def test_container_management_create_or_recreate_container(mocker):
             }
         }
     )
-
+    secret_value_reponse = GetSecretValueResponse(
+        secret_value=SecretValue(
+            secret_string='{"POSTGRES_USER": "this-is-a-username", "POSTGRES_PASSWORD": "Thi5-is-@-password"}'
+        )
+    )
     mocker.patch.object(GreengrassCoreIPCClientV2, "get_configuration", return_value=mock_get_configuration_response)
     mock_container = Container()
     mocker.patch("docker.DockerClient.containers", return_value=ContainerCollection())
@@ -64,6 +71,7 @@ def test_container_management_create_or_recreate_container(mocker):
     mock_remove_container = mocker.patch.object(Container, "remove", return_value=None)
     mock_logs_container = mocker.patch.object(Container, "logs", return_value=[])
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
+    cm.current_configuration = ComponentConfiguration(mock_get_configuration_response, secret_value_reponse)
     cm.subscribe_to_configuration_updates()
     assert not mock_remove_container.called
     assert not mock_stop_container.called
@@ -105,7 +113,11 @@ def test_container_management_run_container(mocker):
             "ConfigurationFiles": {"postgresql.conf": "/path/to/custom/postgresql.conf"},
         }
     )
-
+    secret_value_reponse = GetSecretValueResponse(
+        secret_value=SecretValue(
+            secret_string='{"POSTGRES_USER": "this-is-a-username", "POSTGRES_PASSWORD": "Thi5-is-@-password"}'
+        )
+    )
     mocker.patch.object(GreengrassCoreIPCClientV2, "get_configuration", return_value=mock_get_configuration_response)
 
     mocker.patch("docker.DockerClient.containers", return_value=ContainerCollection())
@@ -114,6 +126,7 @@ def test_container_management_run_container(mocker):
     mock_remove_container = mocker.patch.object(Container, "remove", return_value=None)
     mock_stop_container = mocker.patch.object(Container, "stop", return_value=None)
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
+    cm.current_configuration = ComponentConfiguration(mock_get_configuration_response, secret_value_reponse)
     cm.subscribe_to_configuration_updates()
     assert not mock_remove_container.called
     assert not mock_stop_container.called
@@ -123,7 +136,7 @@ def test_container_management_run_container(mocker):
     assert kwargs["detach"]
 
 
-def test_container_management_restart_container(mocker):
+def test_container_management_no_update_when_same_configuration(mocker):
     mocker.patch("awsiot.greengrasscoreipc", return_value=None)
     mocker.patch("src.configuration_handler", return_value=None)
     mock_ipc_client = GreengrassCoreIPCClientV2()
@@ -166,5 +179,5 @@ def test_container_management_restart_container(mocker):
     assert not mock_remove_container.called
     assert not mock_stop_container.called
     assert not mock_run_container.called
-    assert mock_restart_container.called
-    assert mock_logs_container.called
+    assert not mock_restart_container.called
+    assert not mock_logs_container.called

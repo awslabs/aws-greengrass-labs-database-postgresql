@@ -36,6 +36,16 @@ class ComponentConfiguration:
         self._set_credential_secret(secret_reponse)
         self._set_configuration_files(config_response)
 
+    def __eq__(self, other):
+        return (
+            self.get_container_name() == other.get_container_name()
+            and self.get_container_name() == other.get_container_name()
+            and self.get_host_volume() == other.get_host_volume()
+            and self.get_host_port() == other.get_host_port()
+            and self.get_db_credentials() == other.get_db_credentials()
+            and self.get_pg_config_files() == other.get_pg_config_files()
+        )
+
     def _set_container_config(self, config_response: GetConfigurationResponse):
         """
         Helper function to update the container configuration.
