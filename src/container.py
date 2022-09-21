@@ -15,7 +15,6 @@ from src.constants import (
     POSTGRES_DB_KEY,
     POSTGRES_IMAGE,
     POSTGRES_PASSWORD_KEY,
-    POSTGRES_SERVER_CONFIGURATION_FILES_KEY,
     POSTGRES_USERNAME_KEY,
 )
 
@@ -65,7 +64,7 @@ class ContainerManagement:
                 component_configuration = self.config_handler.get_configuration()
                 if self.current_configuration != component_configuration:
                     self.current_configuration = component_configuration
-                    self.manage_postgresql_container(component_configuration, key_path)
+                    self.manage_postgresql_container(component_configuration)
 
     def _set_container(self, configuration: ComponentConfiguration):
         if not self.postgresql_container:
@@ -74,19 +73,9 @@ class ContainerManagement:
             except Exception as exception:
                 logging.exception(exception, exc_info=True)
 
-    def manage_postgresql_container(self, configuration: ComponentConfiguration, key_path=[]):
+    def manage_postgresql_container(self, configuration: ComponentConfiguration):
         self._set_container(configuration)
-        if POSTGRES_SERVER_CONFIGURATION_FILES_KEY not in key_path:
-            self._recreate_container(configuration)
-        else:
-            self._restart_container()
-
-    def _restart_container(self):
-        if not self.postgresql_container:
-            return
-        logging.info("Restarting the docker container : %s", self.postgresql_container.name)
-        self.postgresql_container.restart()
-        self._follow_container_logs()
+        self._recreate_container(configuration)
 
     def _recreate_container(self, configuration):
         if self.postgresql_container:
