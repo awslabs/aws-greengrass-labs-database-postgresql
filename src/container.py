@@ -11,7 +11,6 @@ from src.configuration import ComponentConfiguration
 from src.configuration_handler import ComponentConfigurationIPCHandler
 from src.constants import (
     CUSTOM_FILES,
-    DB_CREDENTIAL_SECRET_KEY,
     DEFAULT_CONTAINER_PORT,
     DEFAULT_CONTAINER_VOLUME,
     DEFAULT_DB_NAME,
@@ -64,13 +63,11 @@ class ContainerManagement:
     def _on_configuration_update_event(self, events: ConfigurationUpdateEvents):
         if not events.configuration_update_event:
             return
-        key_path = events.configuration_update_event.key_path
-        if DB_CREDENTIAL_SECRET_KEY not in key_path:
-            with self.lock:
-                component_configuration = self.config_handler.get_configuration()
-                if self.current_configuration != component_configuration:
-                    self.current_configuration = component_configuration
-                    self.manage_postgresql_container(component_configuration)
+        with self.lock:
+            component_configuration = self.config_handler.get_configuration()
+            if self.current_configuration != component_configuration:
+                self.current_configuration = component_configuration
+                self.manage_postgresql_container(component_configuration)
 
     def _set_container(self, configuration: ComponentConfiguration):
         if not self.postgresql_container:
@@ -176,9 +173,10 @@ class ContainerManagement:
     def _create_config_command(self, config):
         command = ""
         server_configuration_files = config.get_pg_config_files()
-        if server_configuration_files:
-            for conf_file in server_configuration_files.keys():
-                command = command + " -c {}={}".format(SUPPORTED_CONFIGURATION_FILES[conf_file], f"{CUSTOM_FILES}/{conf_file}")
+        if not server_configuration_files:
+            return
+        for conf_file in server_configuration_files.keys():
+            command = command + " -c {}={}".format(SUPPORTED_CONFIGURATION_FILES[conf_file], f"{CUSTOM_FILES}/{conf_file}")
         return command
 
     def _follow_container_logs(self):
