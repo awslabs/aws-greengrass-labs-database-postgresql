@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from threading import Lock, Thread
 
 import docker.errors
@@ -14,11 +15,11 @@ from src.constants import (
     DEFAULT_CONTAINER_PORT,
     DEFAULT_CONTAINER_VOLUME,
     DEFAULT_DB_NAME,
-    PASSWORDS_PATH,
     POSTGRES_DB_KEY,
     POSTGRES_IMAGE,
     POSTGRES_PASSWORD_FILE_KEY,
-    POSTGRES_USERNAME_KEY,
+    POSTGRES_USERNAME_FILE_KEY,
+    SECRETS_KEY,
     SUPPORTED_CONFIGURATION_FILES,
 )
 
@@ -33,6 +34,7 @@ class ContainerManagement:
         self.postgresql_container = None
         self.lock = Lock()
         self.current_configuration = config_handler.get_configuration()
+        self.secrets_path = Path().joinpath(SECRETS_KEY).resolve()
 
     def subscribe_to_configuration_updates(self):
         """
@@ -123,7 +125,7 @@ class ContainerManagement:
     def _get_volumes(self, config: ComponentConfiguration):
         volumes = [
             f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}",
-            f"{PASSWORDS_PATH}:{CUSTOM_FILES}/{POSTGRES_PASSWORD_FILE_KEY}",
+            f"{self.secrets_path}:{CUSTOM_FILES}/{SECRETS_KEY}",
         ]
 
         server_configuration_files = config.get_pg_config_files()
@@ -135,10 +137,10 @@ class ContainerManagement:
 
     def _run_container(self, config: ComponentConfiguration):
         db_username, db_password = config.get_db_credentials()
-        self.write_secrets_to_file(db_password)
+        self._write_secrets_to_file(db_username, db_password)
         postgres_env = {
-            POSTGRES_USERNAME_KEY: db_username,
-            POSTGRES_PASSWORD_FILE_KEY: f"{CUSTOM_FILES}/{POSTGRES_PASSWORD_FILE_KEY}",
+            POSTGRES_USERNAME_FILE_KEY: f"{CUSTOM_FILES}/{SECRETS_KEY}/{POSTGRES_USERNAME_FILE_KEY}",
+            POSTGRES_PASSWORD_FILE_KEY: f"{CUSTOM_FILES}/{SECRETS_KEY}/{POSTGRES_PASSWORD_FILE_KEY}",
             POSTGRES_DB_KEY: DEFAULT_DB_NAME,
         }
 
@@ -148,7 +150,7 @@ class ContainerManagement:
 
         self.postgresql_container = self.docker_client.containers.run(
             POSTGRES_IMAGE,
-            "{} {}".format(DEFAULT_DB_NAME, self.create_config_command(config)),
+            "{} {}".format(DEFAULT_DB_NAME, self._create_config_command(config)),
             name=container_name,
             ports=postgres_ports,
             environment=postgres_env,
@@ -157,11 +159,21 @@ class ContainerManagement:
         )
         self._follow_container_logs()
 
-    def write_secrets_to_file(self, db_password):
-        with open(PASSWORDS_PATH, "w") as p_file:
-            p_file.write(db_password)
+    def _write_secrets_to_file(self, db_username, db_password):
+        db_user_path = self.secrets_path.joinpath(POSTGRES_USERNAME_FILE_KEY).resolve()
+        db_password_path_ = self.secrets_path.joinpath(POSTGRES_PASSWORD_FILE_KEY).resolve()
+        try:
+            # Create secrets directory if it
+            self.secrets_path.mkdir(parents=True, exist_ok=True)
+            # Write secret files
+            with open(db_user_path, "w") as u_file:
+                u_file.write(db_username)
+            with open(db_password_path_, "w") as p_file:
+                p_file.write(db_password)
+        except Exception as e:
+            logging.exception("Exception while writing the secrets files: ", e)
 
-    def create_config_command(self, config):
+    def _create_config_command(self, config):
         command = ""
         server_configuration_files = config.get_pg_config_files()
         if server_configuration_files:

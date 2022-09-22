@@ -20,7 +20,7 @@ def cleanup_container(docker_client, container_name):
             postgresql_container.stop()
             postgresql_container.remove()
     except Exception:
-        logging.info("Exception occurred while removing the container")
+        logging.exception("Exception occurred while removing the container")
 
 
 def main():
