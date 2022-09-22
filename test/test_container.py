@@ -1,13 +1,9 @@
 import docker
 from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
 from awsiot.greengrasscoreipc.model import (
-    ConfigurationUpdateEvent,
-    ConfigurationUpdateEvents,
-    GetConfigurationResponse,
-    GetSecretValueResponse,
-    SecretValue,
-    SubscribeToConfigurationUpdateResponse,
-)
+    ConfigurationUpdateEvent, ConfigurationUpdateEvents,
+    GetConfigurationResponse, GetSecretValueResponse, SecretValue,
+    SubscribeToConfigurationUpdateResponse)
 from docker.models.containers import Container, ContainerCollection
 from src.configuration import ComponentConfiguration
 from src.configuration_handler import ComponentConfigurationIPCHandler
@@ -70,6 +66,7 @@ def test_container_management_create_or_recreate_container(mocker):
     mock_run_container = mocker.patch.object(docker.DockerClient.containers, "run", return_value=mock_container)
     mock_remove_container = mocker.patch.object(Container, "remove", return_value=None)
     mock_logs_container = mocker.patch.object(Container, "logs", return_value=[])
+    mocker.patch.object(ContainerManagement, "write_secrets_to_file", return_value=None)
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
     cm.current_configuration = ComponentConfiguration(mock_get_configuration_response, secret_value_reponse)
     cm.subscribe_to_configuration_updates()
@@ -125,6 +122,7 @@ def test_container_management_run_container(mocker):
     spy_docker_run = mocker.spy(docker.DockerClient.containers, "run")
     mock_remove_container = mocker.patch.object(Container, "remove", return_value=None)
     mock_stop_container = mocker.patch.object(Container, "stop", return_value=None)
+    mocker.patch.object(ContainerManagement, "write_secrets_to_file", return_value=None)
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
     cm.current_configuration = ComponentConfiguration(mock_get_configuration_response, secret_value_reponse)
     cm.subscribe_to_configuration_updates()
@@ -174,6 +172,8 @@ def test_container_management_no_update_when_same_configuration(mocker):
     mock_run_container = mocker.patch.object(docker.DockerClient.containers, "run", return_value=None)
     mock_restart_container = mocker.patch.object(Container, "restart", return_value=None)
     mock_logs_container = mocker.patch.object(Container, "logs", return_value=[])
+    mocker.patch.object(ContainerManagement, "write_secrets_to_file", return_value=None)
+
     cm = ContainerManagement(mock_ipc_client, docker.DockerClient, mock_configuration_handler)
     cm.subscribe_to_configuration_updates()
     assert not mock_remove_container.called

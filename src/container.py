@@ -9,13 +9,15 @@ from docker.models.containers import Container
 from src.configuration import ComponentConfiguration
 from src.configuration_handler import ComponentConfigurationIPCHandler
 from src.constants import (
+    CUSTOM_FILES,
     DB_CREDENTIAL_SECRET_KEY,
     DEFAULT_CONTAINER_PORT,
     DEFAULT_CONTAINER_VOLUME,
     DEFAULT_DB_NAME,
+    PASSWORDS_PATH,
     POSTGRES_DB_KEY,
     POSTGRES_IMAGE,
-    POSTGRES_PASSWORD_KEY,
+    POSTGRES_PASSWORD_FILE_KEY,
     POSTGRES_USERNAME_KEY,
     SUPPORTED_CONFIGURATION_FILES,
 )
@@ -119,25 +121,31 @@ class ContainerManagement:
             )
 
     def _get_volumes(self, config: ComponentConfiguration):
-        volumes = [f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}"]
+        volumes = [
+            f"{config.get_host_volume()}:{DEFAULT_CONTAINER_VOLUME}",
+            f"{PASSWORDS_PATH}:{CUSTOM_FILES}/{POSTGRES_PASSWORD_FILE_KEY}",
+        ]
+
         server_configuration_files = config.get_pg_config_files()
         if not server_configuration_files:
             return volumes
         for conf_file, file_abs_path in server_configuration_files.items():
-            volumes.append(f"{file_abs_path}:/custom_conf_files/{conf_file}")
+            volumes.append(f"{file_abs_path}:{CUSTOM_FILES}/{conf_file}")
         return volumes
 
     def _run_container(self, config: ComponentConfiguration):
         db_username, db_password = config.get_db_credentials()
+        self.write_secrets_to_file(db_password)
         postgres_env = {
             POSTGRES_USERNAME_KEY: db_username,
-            POSTGRES_PASSWORD_KEY: db_password,
+            POSTGRES_PASSWORD_FILE_KEY: f"{CUSTOM_FILES}/{POSTGRES_PASSWORD_FILE_KEY}",
             POSTGRES_DB_KEY: DEFAULT_DB_NAME,
         }
 
         postgres_ports = {DEFAULT_CONTAINER_PORT: config.get_host_port()}
         container_name = config.get_container_name()
         logging.info("Running the docker container : %s", container_name)
+
         self.postgresql_container = self.docker_client.containers.run(
             POSTGRES_IMAGE,
             "{} {}".format(DEFAULT_DB_NAME, self.create_config_command(config)),
@@ -149,14 +157,16 @@ class ContainerManagement:
         )
         self._follow_container_logs()
 
+    def write_secrets_to_file(self, db_password):
+        with open(PASSWORDS_PATH, "w") as p_file:
+            p_file.write(db_password)
+
     def create_config_command(self, config):
         command = ""
         server_configuration_files = config.get_pg_config_files()
         if server_configuration_files:
             for conf_file in server_configuration_files.keys():
-                command = command + " -c {}={}".format(
-                    SUPPORTED_CONFIGURATION_FILES[conf_file], f"custom_conf_files/{conf_file}"
-                )
+                command = command + " -c {}={}".format(SUPPORTED_CONFIGURATION_FILES[conf_file], f"{CUSTOM_FILES}/{conf_file}")
         return command
 
     def _follow_container_logs(self):
