@@ -17,6 +17,7 @@ from src.constants import (
     POSTGRES_IMAGE,
     POSTGRES_PASSWORD_KEY,
     POSTGRES_USERNAME_KEY,
+    SUPPORTED_CONFIGURATION_FILES,
 )
 
 
@@ -90,23 +91,31 @@ class ContainerManagement:
     def _stop_container(self):
         if not self.postgresql_container:
             return
-        logging.info("Stopping the docker container : %s", self.postgresql_container.name)
+        logging.info(
+            "Stopping the docker container : {}-{}".format(self.postgresql_container.name, self.postgresql_container.id)
+        )
         try:
             self.postgresql_container.stop()
         except docker.errors.NotFound as e:
             logging.debug(
-                "Could not stop the container: %s as it does not exist : " + e.explanation, self.postgresql_container.name
+                "Could not stop the container: {}-{} as it does not exist : {}".format(
+                    self.postgresql_container.name, self.postgresql_container.id, e.explanation
+                )
             )
 
     def _remove_container(self):
         if not self.postgresql_container:
             return
-        logging.info("Removing the docker container : %s", self.postgresql_container.name)
+        logging.info(
+            "Removing the docker container : {}-{}".format(self.postgresql_container.name, self.postgresql_container.id)
+        )
         try:
             self.postgresql_container.remove()
         except docker.errors.NotFound as e:
             logging.debug(
-                "Could not remove the container: %s as it does not exist : " + e.explanation, self.postgresql_container.name
+                "Could not remove the container: {}-{}  as it does not exist : {}".format(
+                    self.postgresql_container.name, self.postgresql_container.id, e.explanation
+                )
             )
 
     def _get_volumes(self, config: ComponentConfiguration):
@@ -115,7 +124,7 @@ class ContainerManagement:
         if not server_configuration_files:
             return volumes
         for conf_file, file_abs_path in server_configuration_files.items():
-            volumes.append(f"{file_abs_path}:{DEFAULT_CONTAINER_VOLUME}/{conf_file}")
+            volumes.append(f"{file_abs_path}:/custom_conf_files/{conf_file}")
         return volumes
 
     def _run_container(self, config: ComponentConfiguration):
@@ -131,6 +140,7 @@ class ContainerManagement:
         logging.info("Running the docker container : %s", container_name)
         self.postgresql_container = self.docker_client.containers.run(
             POSTGRES_IMAGE,
+            "{} {}".format(DEFAULT_DB_NAME, self.create_config_command(config)),
             name=container_name,
             ports=postgres_ports,
             environment=postgres_env,
@@ -139,12 +149,26 @@ class ContainerManagement:
         )
         self._follow_container_logs()
 
+    def create_config_command(self, config):
+        command = ""
+        server_configuration_files = config.get_pg_config_files()
+        if server_configuration_files:
+            for conf_file in server_configuration_files.keys():
+                command = command + " -c {}={}".format(
+                    SUPPORTED_CONFIGURATION_FILES[conf_file], f"custom_conf_files/{conf_file}"
+                )
+        return command
+
     def _follow_container_logs(self):
         def _follow_logs():
             logs_from_container = self.postgresql_container.logs(follow=True, stream=True)
             for log in logs_from_container:
                 logging.info(log.decode())
 
-        logging.info("Following the docker container: %s logs....", self.postgresql_container.name)
+        logging.info(
+            "Following the docker container: {}-{} logs....".format(
+                self.postgresql_container.name, self.postgresql_container.id
+            )
+        )
         logs_thread = Thread(target=_follow_logs)
         logs_thread.start()
