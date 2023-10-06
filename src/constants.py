@@ -14,6 +14,7 @@ DEFAULT_CONTAINER_NAME = "greengrass_postgresql"
 DEFAULT_HOST_VOLUME = Path().joinpath("postgresql").resolve()
 DEFAULT_CONTAINER_PORT = "5432/tcp"
 DEFAULT_DB_NAME = "postgres"
+POSTGRES_COMMAND_DO_NOT_CHANGE = "postgres"
 POSTGRES_DB_KEY = "POSTGRES_DB"
 DEFAULT_CONTAINER_VOLUME = "/var/lib/postgresql/data"
 POSTGRES_IMAGE = "postgres:alpine3.16"

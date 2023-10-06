@@ -14,6 +14,7 @@ from src.constants import (
     DEFAULT_CONTAINER_PORT,
     DEFAULT_CONTAINER_VOLUME,
     DEFAULT_DB_NAME,
+    POSTGRES_COMMAND_DO_NOT_CHANGE,
     POSTGRES_DB_KEY,
     POSTGRES_IMAGE,
     POSTGRES_PASSWORD_FILE_KEY,
@@ -147,7 +148,7 @@ class ContainerManagement:
 
         self.postgresql_container = self.docker_client.containers.run(
             POSTGRES_IMAGE,
-            "{} {}".format(DEFAULT_DB_NAME, self._create_config_command(config)),
+            "{} {}".format(POSTGRES_COMMAND_DO_NOT_CHANGE, self._create_config_command(config)),
             name=container_name,
             ports=postgres_ports,
             environment=postgres_env,
@@ -174,7 +175,7 @@ class ContainerManagement:
         command = ""
         server_configuration_files = config.get_pg_config_files()
         if not server_configuration_files:
-            return
+            return command
         for conf_file in server_configuration_files.keys():
             command = command + " -c {}={}".format(SUPPORTED_CONFIGURATION_FILES[conf_file], f"{CUSTOM_FILES}/{conf_file}")
         return command
